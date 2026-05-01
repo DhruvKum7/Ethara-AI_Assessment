@@ -211,7 +211,7 @@ export default function Signup() {
         {/* Footer */}
         <div className="text-center mt-8">
           <p className="text-sm text-gray-500">
-            © 2024 EtharaFlow. All rights reserved.
+            © 2026 Dhruv Kumar. All rights reserved.
           </p>
         </div>
       </div>
