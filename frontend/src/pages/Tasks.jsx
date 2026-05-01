@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import API from "../api";
-import { Plus, CheckSquare, Clock, AlertTriangle, CheckCircle, Calendar } from "lucide-react";
+import { Plus, CheckSquare, Clock, AlertTriangle, CheckCircle, Calendar, AlertCircle } from "lucide-react";
+import { useAuth } from "../context/AuthContext";
 
 export default function Tasks() {
   const [tasks, setTasks] = useState([]);
@@ -12,6 +13,7 @@ export default function Tasks() {
     dueDate: ""
   });
   const [showForm, setShowForm] = useState(false);
+  const { user } = useAuth();
 
   const loadData = async () => {
     const t = await API.get("/tasks");
@@ -27,22 +29,30 @@ export default function Tasks() {
       return;
     }
 
-    const user = JSON.parse(atob(localStorage.getItem("token").split(".")[1]));
+    try {
+      const userToken = JSON.parse(atob(localStorage.getItem("token").split(".")[1]));
 
-    await API.post("/tasks", {
-      ...form,
-      assignedTo: user.id,
-      priority: "medium"
-    });
+      await API.post("/tasks", {
+        ...form,
+        assignedTo: userToken.id,
+        priority: "medium"
+      });
 
-    setForm({ title: "", description: "", project: "", dueDate: "" });
-    setShowForm(false);
-    loadData();
+      setForm({ title: "", description: "", project: "", dueDate: "" });
+      setShowForm(false);
+      loadData();
+    } catch (err) {
+      alert(err.response?.data?.message || "Failed to create task");
+    }
   };
 
   const updateStatus = async (id, status) => {
-    await API.patch(`/tasks/${id}/status`, { status });
-    loadData();
+    try {
+      await API.patch(`/tasks/${id}/status`, { status });
+      loadData();
+    } catch (err) {
+      alert(err.response?.data?.message || "Failed to update task");
+    }
   };
 
   const getStatusIcon = (status) => {
@@ -75,6 +85,8 @@ export default function Tasks() {
     loadData();
   }, []);
 
+  const canCreateTask = user?.role === "admin";
+
   return (
     <div className="space-y-8">
       {/* Header */}
@@ -85,17 +97,30 @@ export default function Tasks() {
           </h1>
           <p className="text-gray-600 mt-2">Track and manage your tasks</p>
         </div>
-        <button
-          onClick={() => setShowForm(!showForm)}
-          className="flex items-center space-x-2 bg-gradient-to-r from-green-600 to-teal-600 text-white px-6 py-3 rounded-xl hover:shadow-lg transition-all duration-300 hover:-translate-y-1"
-        >
-          <Plus className="w-5 h-5" />
-          <span className="font-medium">New Task</span>
-        </button>
+        {canCreateTask && (
+          <button
+            onClick={() => setShowForm(!showForm)}
+            className="flex items-center space-x-2 bg-gradient-to-r from-green-600 to-teal-600 text-white px-6 py-3 rounded-xl hover:shadow-lg transition-all duration-300 hover:-translate-y-1"
+          >
+            <Plus className="w-5 h-5" />
+            <span className="font-medium">New Task</span>
+          </button>
+        )}
       </div>
 
+      {/* Role-based Message */}
+      {!canCreateTask && (
+        <div className="bg-green-50 border border-green-200 rounded-xl p-4 flex items-start space-x-3">
+          <AlertCircle className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
+          <div>
+            <p className="font-medium text-green-900">Member Access</p>
+            <p className="text-sm text-green-700">Only administrators can create tasks. However, you can update the status of assigned tasks.</p>
+          </div>
+        </div>
+      )}
+
       {/* Create Task Form */}
-      {showForm && (
+      {showForm && canCreateTask && (
         <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-200">
           <h2 className="text-2xl font-bold text-gray-900 mb-6">Create New Task</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

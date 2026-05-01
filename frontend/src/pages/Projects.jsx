@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
 import API from "../api";
-import { Plus, FolderKanban, Calendar, Users } from "lucide-react";
+import { Plus, FolderKanban, Calendar, Users, AlertCircle } from "lucide-react";
+import { useAuth } from "../context/AuthContext";
 
 export default function Projects() {
   const [projects, setProjects] = useState([]);
   const [form, setForm] = useState({ title: "", description: "" });
   const [showForm, setShowForm] = useState(false);
+  const { user } = useAuth();
 
   const loadProjects = async () => {
     const res = await API.get("/projects");
@@ -18,20 +20,26 @@ export default function Projects() {
       return;
     }
 
-    await API.post("/projects", {
-      title: form.title,
-      description: form.description,
-      memberEmails: []
-    });
+    try {
+      await API.post("/projects", {
+        title: form.title,
+        description: form.description,
+        memberEmails: []
+      });
 
-    setForm({ title: "", description: "" });
-    setShowForm(false);
-    loadProjects();
+      setForm({ title: "", description: "" });
+      setShowForm(false);
+      loadProjects();
+    } catch (err) {
+      alert(err.response?.data?.message || "Failed to create project");
+    }
   };
 
   useEffect(() => {
     loadProjects();
   }, []);
+
+  const canCreateProject = user?.role === "admin";
 
   return (
     <div className="space-y-8">
@@ -43,17 +51,30 @@ export default function Projects() {
           </h1>
           <p className="text-gray-600 mt-2">Manage and organize your projects</p>
         </div>
-        <button
-          onClick={() => setShowForm(!showForm)}
-          className="flex items-center space-x-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-3 rounded-xl hover:shadow-lg transition-all duration-300 hover:-translate-y-1"
-        >
-          <Plus className="w-5 h-5" />
-          <span className="font-medium">New Project</span>
-        </button>
+        {canCreateProject && (
+          <button
+            onClick={() => setShowForm(!showForm)}
+            className="flex items-center space-x-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-3 rounded-xl hover:shadow-lg transition-all duration-300 hover:-translate-y-1"
+          >
+            <Plus className="w-5 h-5" />
+            <span className="font-medium">New Project</span>
+          </button>
+        )}
       </div>
 
+      {/* Role-based Message */}
+      {!canCreateProject && (
+        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-start space-x-3">
+          <AlertCircle className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+          <div>
+            <p className="font-medium text-blue-900">Member Access</p>
+            <p className="text-sm text-blue-700">Only administrators can create projects. Contact an admin to create a new project.</p>
+          </div>
+        </div>
+      )}
+
       {/* Create Project Form */}
-      {showForm && (
+      {showForm && canCreateProject && (
         <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-200">
           <h2 className="text-2xl font-bold text-gray-900 mb-6">Create New Project</h2>
           <div className="space-y-6">

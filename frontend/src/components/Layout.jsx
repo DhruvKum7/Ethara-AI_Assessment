@@ -5,22 +5,37 @@ import {
   CheckSquare,
   LogOut,
   User,
-  Home
+  Home,
+  Shield,
+  Users
 } from "lucide-react";
+import { useAuth } from "../context/AuthContext";
 
 export default function Layout({ children }) {
   const navigate = useNavigate();
   const location = useLocation();
+  const { user, logout } = useAuth();
 
   const menuItems = [
     { path: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-    { path: "/projects", label: "Projects", icon: FolderKanban },
+    { path: "/projects", label: "Projects", icon: FolderKanban, adminOnly: true },
     { path: "/tasks", label: "Tasks", icon: CheckSquare },
   ];
 
-  const logout = () => {
-    localStorage.removeItem("token");
+  const handleLogout = () => {
+    logout();
     navigate("/");
+  };
+
+  const visibleMenuItems = menuItems.filter(item => {
+    if (item.adminOnly && user?.role !== "admin") return false;
+    return true;
+  });
+
+  const getRoleBadgeColor = (role) => {
+    return role === "admin"
+      ? "bg-purple-100 text-purple-700 border-purple-200"
+      : "bg-blue-100 text-blue-700 border-blue-200";
   };
 
   return (
@@ -42,7 +57,7 @@ export default function Layout({ children }) {
         </div>
 
         <nav className="p-4 space-y-2">
-          {menuItems.map((item) => {
+          {visibleMenuItems.map((item) => {
             const Icon = item.icon;
             const isActive = location.pathname === item.path;
             return (
@@ -63,8 +78,24 @@ export default function Layout({ children }) {
         </nav>
 
         <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200">
+          {/* User Info */}
+          <div className="mb-4 p-4 bg-gradient-to-br from-slate-50 to-blue-50 rounded-xl border border-gray-200">
+            <div className="flex items-center space-x-2 mb-2">
+              <User className="w-4 h-4 text-gray-600" />
+              <p className="text-xs font-medium text-gray-600">Logged in as</p>
+            </div>
+            <p className="text-sm font-semibold text-gray-900 truncate">{user?.name}</p>
+            <p className="text-xs text-gray-500 truncate">{user?.email}</p>
+            <div className={`inline-block px-2 py-1 rounded-full text-xs font-medium border mt-2 ${getRoleBadgeColor(user?.role)}`}>
+              <div className="flex items-center space-x-1">
+                <Shield className="w-3 h-3" />
+                <span className="capitalize">{user?.role}</span>
+              </div>
+            </div>
+          </div>
+
           <button
-            onClick={logout}
+            onClick={handleLogout}
             className="w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-red-600 hover:bg-red-50 transition-all duration-200"
           >
             <LogOut className="w-5 h-5" />

@@ -5,10 +5,21 @@ const ApiError = require("../utils/ApiError");
 
 class AuthService {
   async signup(data = {}) {
-    const { name, email, password, role } = data;
+    const { name, email, password, role, adminPin } = data;
 
     if (!name || !email || !password) {
       throw new ApiError(400, "Name, email and password are required");
+    }
+
+    if (role === "admin") {
+      if (!adminPin) {
+        throw new ApiError(400, "Admin signup requires a valid PIN");
+      }
+
+      const expectedPin = process.env.ADMIN_SIGNUP_PIN;
+      if (!expectedPin || adminPin !== expectedPin) {
+        throw new ApiError(401, "Invalid admin PIN");
+      }
     }
 
     const existingUser = await userRepository.findByEmail(email);

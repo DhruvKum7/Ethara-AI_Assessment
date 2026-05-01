@@ -2,12 +2,14 @@ import { useState } from "react";
 import API from "../api";
 import { useNavigate } from "react-router-dom";
 import { LogIn, Mail, Lock, Home, ArrowRight } from "lucide-react";
+import { useAuth } from "../context/AuthContext";
 
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const { login } = useAuth();
 
   const handleLogin = async () => {
     if (!email.trim() || !password.trim()) {
@@ -19,7 +21,7 @@ export default function Login() {
     try {
       const res = await API.post("/auth/login", { email, password });
 
-      localStorage.setItem("token", res.data.token);
+      login(res.data.token, res.data.user);
       navigate("/dashboard");
     } catch (err) {
       alert(err.response?.data?.message || "Login failed");

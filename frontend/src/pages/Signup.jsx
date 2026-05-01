@@ -1,20 +1,29 @@
 import { useState } from "react";
 import API from "../api";
 import { useNavigate } from "react-router-dom";
-import { UserPlus, User, Mail, Lock, Home, ArrowRight, ArrowLeft } from "lucide-react";
+import { UserPlus, User, Mail, Lock, Home, ArrowRight, Shield } from "lucide-react";
 
 export default function Signup() {
   const [form, setForm] = useState({
     name: "",
     email: "",
-    password: ""
+    password: "",
+    confirmPassword: "",
+    role: "member",
+    adminPin: ""
   });
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   const handleSignup = async () => {
-    if (!form.name.trim() || !form.email.trim() || !form.password.trim()) {
-      alert("Please fill in all fields");
+    if (
+      !form.name.trim() ||
+      !form.email.trim() ||
+      !form.password.trim() ||
+      !form.confirmPassword.trim() ||
+      (form.role === "admin" && !form.adminPin.trim())
+    ) {
+      alert("Please fill in all required fields");
       return;
     }
 
@@ -23,11 +32,19 @@ export default function Signup() {
       return;
     }
 
+    if (form.password !== form.confirmPassword) {
+      alert("Passwords do not match");
+      return;
+    }
+
     setLoading(true);
     try {
       await API.post("/auth/signup", {
-        ...form,
-        role: "admin"
+        name: form.name,
+        email: form.email,
+        password: form.password,
+        role: form.role,
+        adminPin: form.role === "admin" ? form.adminPin.trim() : undefined
       });
 
       alert("Signup successful! Please login.");
@@ -104,6 +121,60 @@ export default function Signup() {
                   type="password"
                   value={form.password}
                   onChange={(e) => setForm({ ...form, password: e.target.value })}
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center space-x-1">
+                <Shield className="w-4 h-4" />
+                <span>Role</span>
+              </label>
+              <select
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 bg-white"
+                value={form.role}
+                onChange={(e) => setForm({ ...form, role: e.target.value })}
+              >
+                <option value="member">Member (Limited Access)</option>
+                <option value="admin">Admin (Full Access)</option>
+              </select>
+              <p className="text-xs text-gray-500 mt-2">
+                {form.role === "admin"
+                  ? "Admin can create and manage projects & tasks"
+                  : "Member can only view and update task status"}
+              </p>
+            </div>
+
+            {form.role === "admin" && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Admin Access PIN
+                </label>
+                <input
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-200"
+                  placeholder="Enter admin signup PIN"
+                  type="password"
+                  value={form.adminPin}
+                  onChange={(e) => setForm({ ...form, adminPin: e.target.value })}
+                />
+                <p className="text-xs text-red-500 mt-2">
+                  This PIN is required to register as an admin. Ask your system administrator for the admin signup PIN.
+                </p>
+              </div>
+            )}
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Confirm Password
+              </label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <input
+                  className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
+                  placeholder="Confirm your password"
+                  type="password"
+                  value={form.confirmPassword}
+                  onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })}
                 />
               </div>
             </div>
